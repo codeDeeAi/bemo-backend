@@ -32,6 +32,16 @@ class KabanCard extends Model
     ];
 
     /**
+     * Get the column that owns the KabanCard
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function column()
+    {
+        return $this->belongsTo(KabanColumn::class, 'kaban_column_id', 'id');
+    }
+
+    /**
      * Scope a query to return all cards.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
@@ -40,27 +50,19 @@ class KabanCard extends Model
     public function scopeLoadAll($query)
     {
         $kaban_column_id = (request()->query('access_token'))
-            ? KabanColumn::where(AccessTokens::where('token', request()->query('access_token'))->value('id'))->value('id')
+            ? KabanColumn::where('access_token_id', AccessTokens::where('token', request()->query('access_token'))->value('id'))->value('id')
             : null;
-        $query = $query->where('kaban_column_id', $kaban_column_id)
-            ->select('id', 'title');
+
+        $query = $query->where('kaban_column_id', $kaban_column_id);
 
         if (request()->query('date')) {
-            $query = $query->with('cards', function ($query) {
-                $query->whereDate('created_date', '=',  request()->query('date'))
-                    ->select('id', 'title', 'description', 'created_at');
-            });
+            $query = $query->whereDate('created_date', '=',  request()->query('date'));
         }
         if (request()->query('status')) {
             $status = (request()->query('status') == '1') ? true : false;
-            $query = $query->with('cards', function ($query) use ($status) {
-                $query->where('status', $status)
-                    ->select('id', 'title', 'description', 'created_at');
-            });
-        } else {
-            $query = $query->with('cards', function ($query) {
-                $query->select('id', 'title', 'description', 'created_at');
-            });
+            $query = $query->where('status', $status);
         }
+
+        $query = $query->select('id', 'title', 'description', 'created_at');
     }
 }

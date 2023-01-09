@@ -35,3 +35,6 @@ Route::get('list-cards', [KabanCardController::class, 'index']);
 Route::post('card', [KabanCardController::class, 'create']);
 Route::patch('card/{card}', [KabanCardController::class, 'update']);
 Route::delete('card/{card}', [KabanCardController::class, 'destroy']);
+
+## Update Card Posistions
+Route::patch('cardPositions', [KabanCardController::class, 'updatePositions']);

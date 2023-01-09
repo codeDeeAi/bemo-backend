@@ -28,7 +28,7 @@ class KabanColumn extends Model
      */
     public function cards()
     {
-        return $this->hasMany(KabanCard::class, 'id');
+        return $this->hasMany(KabanCard::class, 'kaban_column_id', 'id');
     }
 
     /**
@@ -42,7 +42,7 @@ class KabanColumn extends Model
         $query->where('access_token_id', AccessTokens::where('token', request()->query('access_token') ?? null)->value('id'))
             ->select('id', 'title')
             ->with('cards', function ($query) {
-                $query->select('id', 'title', 'description', 'created_at');
+                $query->select('id', 'kaban_column_id', 'title', 'description', 'created_at');
             });
     }
 }

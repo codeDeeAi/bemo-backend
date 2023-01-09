@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KabanCard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KabanCardController extends Controller
 {
@@ -36,24 +37,17 @@ class KabanCardController extends Controller
     // Update Card
     public function update(Request $request, KabanCard $card)
     {
-        $validation_rules = match ($request->query('update')) {
-            'move' => [
-                'kaban_column_id' => 'required|exists:kaban_columns,id',
-            ],
-            'title' => ['title' => 'required|string|max:191'],
-            'description' => ['description' => 'required|string|max:2000'],
-            'status' => ['status' => 'required|boolean'],
-            default => [
-                'kaban_column_id' => 'required|exists:kaban_columns,id',
-                'title' => 'required|string|max:191',
-                'description' => 'required|string|max:2000',
-                'status' => 'nullable|boolean'
-            ]
-        };
+        $this->validate($request, [
+            'title' => 'required|string|max:191',
+            'description' => 'required|string|max:2000',
+            'status' => 'nullable|boolean'
+        ]);
 
-        $this->validate($request, $validation_rules);
-
-        $card->update([...$request->validated()]);
+        $card->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => $request->status ?? true
+        ]);
 
         return response()->json(['card' => $card], 200);
     }
@@ -66,5 +60,41 @@ class KabanCardController extends Controller
         return response()->json([
             'message' => 'Deleted'
         ], 200);
+    }
+
+    // Update Positions
+    public function updatePositions(Request $request)
+    {
+        $this->validate($request, [
+            'data' => 'required|array'
+        ]);
+        DB::beginTransaction();
+        try {
+            foreach ($request->data as $item) {
+                if (isset($item['cards']) && count($item['cards']) > 0) {
+                    foreach ($item['cards'] as $card) {
+                        KabanCard::where('id', $card['id'])
+                            ->update([
+                                'title' => $card['title'],
+                                'description' => $card['description'],
+                                'kaban_column_id' => $item['id']
+                            ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => $request->data
+            ], 200);
+        } catch (\Throwable $th) {
+
+            DB::rollback();
+
+            return response()->json([
+                'error' => $th
+            ], 500);
+        }
     }
 }
